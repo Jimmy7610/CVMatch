@@ -51,6 +51,7 @@ export interface Version {
     updatedAt: string;
     tailoredCvJson: MasterCV;
     changeLogJson: ChangeLog;
+    questions: string[];
 }
 
 export interface ChangeLog {

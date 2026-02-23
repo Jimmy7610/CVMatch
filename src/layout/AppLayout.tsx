@@ -1,5 +1,6 @@
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, NavLink } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
+import { FileText, Briefcase } from "lucide-react";
 
 export function AppLayout() {
     return (
@@ -7,9 +8,19 @@ export function AppLayout() {
             <header className="border-b bg-card">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <Link to="/" className="text-xl font-bold tracking-tight">CVMatch</Link>
-                    <nav className="flex gap-4">
-                        <Link to="/cv" className="text-sm font-medium hover:text-primary transition-colors">Mitt CV</Link>
-                        <Link to="/jobs" className="text-sm font-medium hover:text-primary transition-colors">Jobb</Link>
+                    <nav className="flex gap-6 h-full items-center">
+                        <NavLink
+                            to="/cv"
+                            className={({ isActive }) => `flex items-center gap-2 text-sm font-medium transition-colors h-full border-b-2 pt-1 ${isActive ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}
+                        >
+                            <FileText className="h-4 w-4" /> Mitt CV
+                        </NavLink>
+                        <NavLink
+                            to="/jobs"
+                            className={({ isActive }) => `flex items-center gap-2 text-sm font-medium transition-colors h-full border-b-2 pt-1 ${isActive ? "text-primary border-primary" : "text-muted-foreground hover:text-foreground border-transparent"}`}
+                        >
+                            <Briefcase className="h-4 w-4" /> Jobb
+                        </NavLink>
                     </nav>
                 </div>
             </header>
