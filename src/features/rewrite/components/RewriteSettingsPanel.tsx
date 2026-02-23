@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useRewriteSettings } from "../../../lib/store";
+import { useAppSettings } from "../../../lib/store";
 import { getRewriteProvider } from "../providers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 
 export function RewriteSettingsPanel() {
-    const { settings, updateSettings, loading } = useRewriteSettings();
+    const { settings, updateSettings, loading } = useAppSettings();
     const [testing, setTesting] = useState(false);
     const { toast } = useToast();
 

@@ -61,11 +61,14 @@ export interface ChangeLog {
     rephrasedBullets: { before: string; after: string }[];
 }
 
-export interface RewriteSettings {
+export type Theme = 'light' | 'dark' | 'system';
+
+export interface AppSettings {
     id: string; // 'app'
     rewriteMode: 'rule' | 'ollama';
     ollamaEndpoint: string;
     ollamaModel: string;
+    theme: Theme;
 }
 
 export interface Confirmation {

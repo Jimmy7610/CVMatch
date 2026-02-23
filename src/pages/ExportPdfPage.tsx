@@ -5,11 +5,13 @@ import { CvPrintTemplate } from "../features/export/CvPrintTemplate";
 import type { Version } from "../types";
 import { Button } from "@/components/ui/button";
 import { Printer, ArrowLeft } from "lucide-react";
+import { useAppSettings, applyTheme } from "../lib/store";
 
 export default function ExportPdfPage() {
     const { id: jobId } = useParams();
     const navigate = useNavigate();
     const [version, setVersion] = useState<Version | null>(null);
+    const { settings } = useAppSettings();
 
     useEffect(() => {
         if (!jobId) return;
@@ -23,6 +25,21 @@ export default function ExportPdfPage() {
         }
         load();
     }, [jobId, navigate]);
+
+    useEffect(() => {
+        const root = window.document.documentElement;
+        // Delay slightly to override applyTheme from useAppSettings load
+        const timer = setTimeout(() => {
+            root.classList.remove("dark");
+        }, 10);
+
+        return () => {
+            clearTimeout(timer);
+            if (settings) {
+                applyTheme(settings.theme);
+            }
+        };
+    }, [settings]);
 
     if (!version) return <div className="p-8 text-center print:hidden">Laddar utskrift...</div>;
 

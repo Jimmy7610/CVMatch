@@ -1,11 +1,11 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Profile, Job, Version, RewriteSettings, Confirmation } from '../types';
+import type { Profile, Job, Version, AppSettings, Confirmation } from '../types';
 
 export const db = new Dexie('cvmatchdb') as Dexie & {
     profile: EntityTable<Profile, 'id'>;
     jobs: EntityTable<Job, 'id'>;
     versions: EntityTable<Version, 'id'>;
-    settings: EntityTable<RewriteSettings, 'id'>;
+    settings: EntityTable<AppSettings, 'id'>;
     confirmations: EntityTable<Confirmation, 'id'>;
 };
 

@@ -7,9 +7,11 @@ Ett lokalt verktyg för att skräddarsy ditt svenska CV mot specifika jobb, med 
 - **Mitt CV (Master)**: Hantera och redigera ditt grund-CV i en strukturerad vy.
 - **Jobbhantering**: Klistra in en skärmdump på en jobbannons och använd lokal OCR (Tesseract) för att extrahera texten (eller skriv in manuellt).
 - **CV Anpassning**:
+- **CV Anpassning**:
   - _Standard (regelbaserad)_: Använder sökorden i jobbannonsen för att flytta upp och betona relevanta delar av ditt CV. Hittar aldrig på ny information.
   - _Ollama (lokalt, AI)_: Frivillig AI-tjänst som körs lokalt på din maskin för att omformulera dina befintliga "claims" till en ännu vassare ton, utan att fabricera kompetenser.
-- **Utskrift**: Skapa en ATS-vänlig och ren layout redo för PDF-export (1-kolumn).
+- **Mörkt Tema (Dark Mode)**: Inbyggt stöd för mörkt tema som respekterar dina systeminställningar och sparas lokalt.
+- **Utskrift**: Skapa en ATS-vänlig och ren layout redo för PDF-export (1-kolumn). Ljust tema tvingas alltid vid utskrift.
 
 ## Teknisk Stack
 

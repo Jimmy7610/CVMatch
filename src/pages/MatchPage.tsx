@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { jobService } from "../features/jobs/jobService";
 import { versionService } from "../features/versions/versionService";
 import { useMasterCv } from "../hooks/useMasterCv";
-import { useRewriteSettings } from "../lib/store";
+import { useAppSettings } from "../lib/store";
 import { getRewriteProvider } from "../features/rewrite/providers";
 import { RewriteSettingsPanel } from "../features/rewrite/components/RewriteSettingsPanel";
 import { ChangeLogPanel } from "../components/match/ChangeLogPanel";
@@ -19,7 +19,7 @@ export default function MatchPage() {
     const { toast } = useToast();
 
     const { profile, loading: profileLoading } = useMasterCv();
-    const { settings, loading: settingsLoading } = useRewriteSettings();
+    const { settings, loading: settingsLoading } = useAppSettings();
 
     const [job, setJob] = useState<Job | null>(null);
     const [version, setVersion] = useState<Version | null>(null);
