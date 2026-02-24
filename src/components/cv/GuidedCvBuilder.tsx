@@ -14,7 +14,7 @@ export function GuidedCvBuilder({ onDone }: { onDone: () => void }) {
     const handleParse = () => {
         if (!pasteText.trim()) return;
         const structured = parseCvFromText(pasteText);
-        updateCv(structured, true);
+        updateCv({ ...structured, rawCvText: pasteText }, true);
         toast({ title: "Importerat!", description: "Gå igenom och rätta eventuella fel." });
         onDone();
     };

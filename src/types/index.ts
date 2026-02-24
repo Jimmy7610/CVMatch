@@ -7,6 +7,7 @@ export interface Profile {
 // Master CV structure based on constraints:
 // Section names roughly: Profil, Erfarenheter, Utbildning, Kompetenser, Certifikat, Språk, Länkar
 export interface MasterCV {
+    rawCvText: string;
     profile: string;
     experiences: Experience[];
     education: Education[];

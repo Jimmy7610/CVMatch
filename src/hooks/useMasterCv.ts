@@ -3,6 +3,7 @@ import { db } from "../lib/db";
 import type { Profile, MasterCV } from "../types";
 
 const defaultMasterCv: MasterCV = {
+    rawCvText: "",
     profile: "",
     experiences: [],
     education: [],
@@ -12,7 +13,7 @@ const defaultMasterCv: MasterCV = {
     links: []
 };
 
-export type SaveStatus = "idle" | "saving" | "saved" | "error";
+export type SaveStatus = "idle" | "saving" | "saved" | "error" | "validation_error";
 
 export function useMasterCv() {
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -60,6 +61,14 @@ export function useMasterCv() {
     }, []);
 
     const saveToDb = useCallback(async (p: Profile) => {
+        // Enforce persistence rules: rawCvText >= 200 OR experiences >= 1
+        const hasMinData = p.masterCvJson.experiences.length >= 1 || p.masterCvJson.rawCvText.length >= 200;
+
+        if (!hasMinData) {
+            setSaveStatus("validation_error");
+            return;
+        }
+
         setSaveStatus("saving");
         try {
             await db.profile.put(p);

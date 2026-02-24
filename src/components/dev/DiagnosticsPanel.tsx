@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "../../lib/db";
-import { useMasterCv } from "../../../hooks/useMasterCv";
+import { useMasterCv } from "../../hooks/useMasterCv";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, Database, Activity } from "lucide-react";

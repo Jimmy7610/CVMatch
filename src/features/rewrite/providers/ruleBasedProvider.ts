@@ -12,7 +12,7 @@ export class RuleBasedProvider implements RewriteProvider {
 
         // 2. Score and reorder experiences
         const scoredExperiences = masterCvJson.experiences.map(exp => {
-            const expText = `${exp.role} ${exp.description} ${exp.bullets.join(" ")}`.toLowerCase();
+            const expText = `${exp.role} ${exp.company} ${exp.description} ${exp.bullets.join(" ")}`.toLowerCase();
             const matchCount = Array.from(jobTokens).filter(token => expText.includes(token)).length;
             return { ...exp, score: matchCount };
         });
@@ -23,7 +23,17 @@ export class RuleBasedProvider implements RewriteProvider {
             .map(({ score, ...exp }) => exp);
 
         // 3. Score and reorder skills
-        const scoredSkills = masterCvJson.skills.map(skill => {
+        // Fallback: If no skills and rawCvText exists, derive some common terms that match job tokens
+        let allSkills = [...masterCvJson.skills];
+        if (allSkills.length === 0 && masterCvJson.rawCvText) {
+            const rawLower = masterCvJson.rawCvText.toLowerCase();
+            const derivedSkills = Array.from(jobTokens).filter(token =>
+                token.length > 3 && rawLower.includes(token)
+            );
+            allSkills = [...new Set([...allSkills, ...derivedSkills])];
+        }
+
+        const scoredSkills = allSkills.map(skill => {
             const matchCount = Array.from(jobTokens).filter(token => skill.toLowerCase().includes(token)).length;
             return { skill, score: matchCount };
         });
