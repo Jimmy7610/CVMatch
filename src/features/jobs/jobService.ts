@@ -20,6 +20,7 @@ export const jobService = {
             extractedText: "",
             createdAt: now,
             updatedAt: now,
+            dismissedRequirements: []
         });
         return id;
     },

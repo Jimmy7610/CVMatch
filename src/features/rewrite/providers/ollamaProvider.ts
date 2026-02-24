@@ -14,7 +14,10 @@ const OllamaResponseSchema = z.object({
         }))
     }),
     usedClaimIds: z.array(z.string()),
-    questions: z.array(z.string())
+    questions: z.array(z.object({
+        text: z.string(),
+        category: z.string()
+    }))
 });
 
 export class OllamaProvider implements RewriteProvider {

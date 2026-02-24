@@ -66,19 +66,12 @@ export function TestFlowPage() {
             const normalized = normalizeCv(rawCvText);
 
             // 1. Save Master CV
-            const existingProfile = await db.profile.toCollection().first();
-            if (existingProfile) {
-                await db.profile.update(existingProfile.id!, { // @ts-ignore
-                    masterCvJson: normalized.normalizedCv,
-                    updatedAt: new Date().toISOString()
-                });
-            } else {
-                // @ts-ignore
-                await db.profile.add({
-                    masterCvJson: normalized.normalizedCv,
-                    updatedAt: new Date().toISOString()
-                });
-            }
+            // @ts-ignore
+            await db.profile.put({
+                id: "me",
+                masterCvJson: normalized.normalizedCv,
+                updatedAt: new Date().toISOString()
+            });
 
             // 2. Save Job Match
             const jobId = crypto.randomUUID();

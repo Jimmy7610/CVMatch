@@ -19,7 +19,7 @@ export function DiagnosticsPanel() {
         });
     }, []);
 
-    if (process.env.NODE_ENV === "production") return null;
+    if (import.meta.env.MODE === "production") return null;
 
     const masterCvSize = profile ? JSON.stringify(profile.masterCvJson).length : 0;
 
