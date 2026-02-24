@@ -5,21 +5,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileUp, FileText, ClipboardList, Loader2, CheckCircle2 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+// import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import mammoth from "mammoth";
 
-// Initialize PDF.js worker using Vite's URL handling
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+import { normalizeCv, type NormalizerResult } from "@/lib/cvNormalizer";
+import type { MasterCV } from "@/types";
 
 interface CvImportProps {
-    onImport: (text: string, source?: string) => void;
+    onImport: (normalized: MasterCV) => void;
 }
 
 export function CvImport({ onImport }: CvImportProps) {
     const { toast } = useToast();
     const [pastedText, setPastedText] = useState("");
     const [isExtracting, setIsExtracting] = useState(false);
-    const [importStats, setImportStats] = useState<{ source: string, count: number } | null>(null);
+    const [normResult, setNormResult] = useState<NormalizerResult | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePdfExtraction = async (file: File) => {
@@ -42,7 +42,8 @@ export function CvImport({ onImport }: CvImportProps) {
             const cleanText = fullText.trim();
             if (cleanText.length < 50) throw new Error("Kunde inte extrahera tillräckligt med text från PDF:en.");
 
-            setImportStats({ source: `PDF (${pdf.numPages} sidor)`, count: cleanText.length });
+            const normalized = normalizeCv(cleanText);
+            setNormResult(normalized);
             setPastedText(cleanText);
             toast({ title: "PDF Inläst", description: `${cleanText.length} tecken extraherade.` });
         } catch (error: any) {
@@ -66,7 +67,8 @@ export function CvImport({ onImport }: CvImportProps) {
 
             if (cleanText.length < 50) throw new Error("Kunde inte extrahera tillräckligt med text från DOCX-filen.");
 
-            setImportStats({ source: "DOCX", count: cleanText.length });
+            const normalized = normalizeCv(cleanText);
+            setNormResult(normalized);
             setPastedText(cleanText);
             toast({ title: "DOCX Inläst", description: `${cleanText.length} tecken extraherade.` });
         } catch (error: any) {
@@ -98,14 +100,16 @@ export function CvImport({ onImport }: CvImportProps) {
     };
 
     const handleConfirmImport = () => {
-        if (pastedText.length < 50) {
-            toast({ title: "För lite text", description: "Vänligen klistra in eller ladda upp mer text (minst 50 tecken).", variant: "destructive" });
-            return;
+        if (!normResult) {
+            if (pastedText.length < 50) {
+                toast({ title: "För lite text", description: "Vänligen klistra in eller ladda upp mer text (minst 50 tecken).", variant: "destructive" });
+                return;
+            }
+            onImport(normalizeCv(pastedText).normalizedCv);
+        } else {
+            onImport(normResult.normalizedCv);
         }
-
-        const source = importStats?.source || "Inskriven text";
-        onImport(pastedText, source);
-        toast({ title: "CV Importerat", description: "Texten har sparats som rådata till ditt Master CV." });
+        toast({ title: "CV Importerat", description: "Ditt CV har strukturerats och sparats." });
     };
 
     return (
@@ -151,28 +155,67 @@ export function CvImport({ onImport }: CvImportProps) {
                         value={pastedText}
                         onChange={(e) => {
                             setPastedText(e.target.value);
-                            if (importStats) setImportStats(null);
+                            setNormResult(null);
+                        }}
+                        onBlur={() => {
+                            if (pastedText.length >= 50 && !normResult) {
+                                setNormResult(normalizeCv(pastedText));
+                            }
                         }}
                     />
                     <div className="flex justify-between items-center px-1">
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
                             {pastedText.length} tecken
                         </span>
-                        {importStats && (
-                            <span className="text-[10px] text-green-600 font-bold flex items-center gap-1">
-                                <CheckCircle2 className="h-3 w-3" />
-                                {importStats.source.toUpperCase()} IDENTIFIERAD
-                            </span>
-                        )}
                     </div>
                 </div>
 
+                {normResult && (
+                    <div className="p-4 border rounded-md bg-green-50/50 border-green-100">
+                        <h3 className="font-bold flex items-center gap-2 mb-2 text-green-800">
+                            <CheckCircle2 className="h-5 w-5" />
+                            Vi tolkade ditt CV
+                        </h3>
+                        <p className="text-sm text-green-700/80 mb-4">
+                            Här är en sammanfattning av vad vi hittade. Du kan granska och justera alla detaljer i nästa steg innan du sparar.
+                        </p>
+                        <div className="grid grid-cols-2 gap-4 text-sm bg-white p-3 rounded border border-green-100 shadow-sm">
+                            <div>
+                                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Erfarenheter</span>
+                                <span className="font-bold">{normResult.stats.experiences} st</span>
+                            </div>
+                            <div>
+                                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Kompetenser</span>
+                                <span className="font-bold">
+                                    {normResult.stats.skills > 0 ? (
+                                        <span>
+                                            {normResult.stats.skills} st
+                                            <span className="text-xs font-normal text-muted-foreground ml-1">
+                                                ({normResult.normalizedCv.skills.slice(0, 3).join(", ")}...)
+                                            </span>
+                                        </span>
+                                    ) : (
+                                        "Inga hittades"
+                                    )}
+                                </span>
+                            </div>
+                            <div className="col-span-2">
+                                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Personlig profil</span>
+                                <span className="font-medium text-xs line-clamp-2">
+                                    {normResult.normalizedCv.profile ? `✅ ${normResult.normalizedCv.profile.substring(0, 100)}...` : "❌ Hittades ej"}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <Button
                     className="w-full"
+                    size="lg"
                     onClick={handleConfirmImport}
                     disabled={pastedText.length < 50 || isExtracting}
                 >
-                    Slutför import till Master CV
+                    Spara & Granska nedan →
                 </Button>
             </CardContent>
         </Card>

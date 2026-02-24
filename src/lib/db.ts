@@ -13,7 +13,11 @@ export const db = new Dexie('cvmatchdb') as Dexie & {
 db.version(1).stores({
     profile: 'id', // Usually just 'me'
     jobs: 'id',
-    versions: 'id, jobId', // jobId is an index for quick lookup
-    settings: 'id', // Usually just 'app'
+    versions: 'id, jobId',
+    settings: 'id',
     confirmations: 'id, key'
+});
+
+db.version(2).stores({
+    jobs: 'id', // No index changes needed for sourceUrl or dismissedRequirements yet
 });

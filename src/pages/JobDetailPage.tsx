@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, Bot } from "lucide-react";
+import { Upload, FileText, Bot, Link2, ExternalLink } from "lucide-react";
 
 export default function JobDetailPage() {
     const { id } = useParams();
@@ -19,6 +19,8 @@ export default function JobDetailPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const { extractText, progress, isProcessing, error } = useOcr();
+    const [isFetchingUrl, setIsFetchingUrl] = useState(false);
+    const [showCorsAlert, setShowCorsAlert] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -72,6 +74,48 @@ export default function JobDetailPage() {
         }
     };
 
+    const handleFetchUrl = async () => {
+        if (!job || !job.sourceUrl) return;
+
+        setIsFetchingUrl(true);
+        try {
+            const response = await fetch(job.sourceUrl);
+            const html = await response.text();
+
+            // Basic DOM parsing to extract text
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Remove noise
+            doc.querySelectorAll('script, style, nav, footer, header, svg, noscript').forEach(el => el.remove());
+
+            // Target common content areas or just take body text
+            const text = doc.body.innerText || doc.body.textContent || "";
+            const cleanText = text.replace(/\s+/g, ' ').trim();
+
+            if (cleanText.length < 100) {
+                throw new Error("Kunde inte hitta tillräckligt med text på sidan.");
+            }
+
+            updateJob({ extractedText: cleanText });
+            toast({
+                title: "Text hämtad!",
+                description: `${cleanText.length} tecken extraherade från länken.`
+            });
+        } catch (err) {
+            toast({
+                title: "Hämtning misslyckades",
+                description: "Webbplatsen blockerar troligen hämtning (CORS). Öppna annonsen, markera texten och kopiera in den här.",
+                variant: "destructive",
+                duration: 5000
+            });
+            // Show a specific alert or message in the UI too
+            setShowCorsAlert(true);
+        } finally {
+            setIsFetchingUrl(false);
+        }
+    };
+
     if (!job) return <div className="p-8 text-center text-muted-foreground">Laddar...</div>;
 
     return (
@@ -81,9 +125,11 @@ export default function JobDetailPage() {
                     <h1 className="text-3xl font-bold">Jobbdetaljer</h1>
                     <p className="text-muted-foreground">Klistra in annonsen eller ladda upp en skärmdump.</p>
                 </div>
-                <Button onClick={() => navigate(`/match/${job.id}`)}>
-                    <Bot className="mr-2 h-4 w-4" /> Matcha CV
-                </Button>
+                {job && (
+                    <Button onClick={() => navigate(`/match/${job.id}`)}>
+                        <Bot className="mr-2 h-4 w-4" /> Matcha CV
+                    </Button>
+                )}
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
@@ -108,6 +154,39 @@ export default function JobDetailPage() {
                                     onChange={e => updateJob({ company: e.target.value })}
                                     placeholder="t.ex. TechCorp AB"
                                 />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-2">
+                                    <Link2 className="h-4 w-4" /> Jobblänk (URL)
+                                </Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        value={job.sourceUrl || ""}
+                                        onChange={e => updateJob({ sourceUrl: e.target.value })}
+                                        placeholder="https://..."
+                                    />
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={handleFetchUrl}
+                                        disabled={!job.sourceUrl || isFetchingUrl}
+                                    >
+                                        {isFetchingUrl ? "Hämtar..." : "Hämta text"}
+                                    </Button>
+                                </div>
+                                {showCorsAlert && (
+                                    <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive font-medium space-y-2">
+                                        <p>Webbplatsen blockerar automatisk hämtning (CORS).</p>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full text-xs gap-1"
+                                            onClick={() => window.open(job.sourceUrl, '_blank')}
+                                        >
+                                            Öppna länken i ny flik <ExternalLink className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

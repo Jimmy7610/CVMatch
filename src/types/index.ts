@@ -40,9 +40,11 @@ export interface Job {
     updatedAt: string;
     title: string;
     company: string;
+    sourceUrl?: string; // New: web link to job
     sourceImageMeta?: string;
     extractedText: string;
     notes?: string;
+    dismissedRequirements: string[]; // New: list of ignored tokens
 }
 
 export interface Version {
@@ -52,7 +54,7 @@ export interface Version {
     updatedAt: string;
     tailoredCvJson: MasterCV;
     changeLogJson: ChangeLog;
-    questions: string[];
+    questions: { text: string; category: string }[];
 }
 
 export interface ChangeLog {

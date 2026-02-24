@@ -6,12 +6,13 @@ export interface JobParsedData {
     niceToHave: string[];
     responsibilities: string[];
     keywords: string[];
+    dismissedRequirements?: string[]; // New: list of ignored tokens
 }
 
 export interface RewriteResult {
     tailoredCvJson: MasterCV;
     changeLogJson: ChangeLog;
-    questions: string[];
+    questions: { text: string; category: string }[];
 }
 
 export interface ProviderOptions {

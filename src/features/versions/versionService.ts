@@ -8,7 +8,7 @@ export const versionService = {
         return versions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
     },
 
-    async create(jobId: string, tailoredCvJson: MasterCV, changeLogJson: ChangeLog, questions: string[]): Promise<string> {
+    async create(jobId: string, tailoredCvJson: MasterCV, changeLogJson: ChangeLog, questions: { text: string; category: string }[]): Promise<string> {
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
         await db.versions.put({
@@ -23,7 +23,7 @@ export const versionService = {
         return id;
     },
 
-    async updateQuestions(id: string, questions: string[]): Promise<void> {
+    async updateQuestions(id: string, questions: { text: string; category: string }[]): Promise<void> {
         await db.versions.update(id, { questions });
     }
 };

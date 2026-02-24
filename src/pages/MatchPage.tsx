@@ -8,10 +8,11 @@ import { getRewriteProvider } from "../features/rewrite/providers";
 import { RewriteSettingsPanel } from "../features/rewrite/components/RewriteSettingsPanel";
 import { ChangeLogPanel } from "../components/match/ChangeLogPanel";
 import { QuestionsPanel } from "../components/match/QuestionsPanel";
+import { MatchPreview } from "../components/match/MatchPreview";
 import type { Job, Version } from "../types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Wand2, FileSearch } from "lucide-react";
+import { FileText, Wand2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function MatchPage() {
@@ -61,7 +62,8 @@ export default function MatchPage() {
                 requirements: jobTokens,
                 niceToHave: [],
                 responsibilities: [],
-                keywords: jobTokens
+                keywords: jobTokens,
+                dismissedRequirements: job.dismissedRequirements || []
             };
 
             const provider = getRewriteProvider(settings.rewriteMode);
@@ -84,11 +86,32 @@ export default function MatchPage() {
         }
     };
 
+    const handleDismiss = async (requirement: string) => {
+        if (!job) return;
+        const dismissed = job.dismissedRequirements || [];
+        if (!dismissed.includes(requirement)) {
+            const updatedDismissed = [...dismissed, requirement];
+            await jobService.update(job.id, { dismissedRequirements: updatedDismissed });
+            setJob({ ...job, dismissedRequirements: updatedDismissed });
+            // Re-generate to update questions list immediately
+            handleGenerate();
+        }
+    };
+
+    const handleConfirm = async (requirement: string) => {
+        // Optional: save to confirmations table
+        toast({ title: "Bekräftat!", description: `Vi har noterat att du har erfarenhet av ${requirement}.` });
+    };
+
     if (profileLoading || settingsLoading || !job) {
         return <div className="p-8 text-center text-muted-foreground">Laddar...</div>;
     }
 
-    const hasMasterContent = profile?.masterCvJson.experiences && profile.masterCvJson.experiences.length > 0;
+    const experiencesCount = profile?.masterCvJson.experiences?.length || 0;
+    const bulletsCount = profile?.masterCvJson.experiences?.reduce((acc, exp) => acc + (exp.bullets?.length || 0), 0) || 0;
+    const skillsCount = profile?.masterCvJson.skills?.length || 0;
+    const isHealthy = experiencesCount >= 2 && bulletsCount >= 6 && skillsCount >= 5;
+    const hasMasterContent = experiencesCount > 0;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -110,13 +133,13 @@ export default function MatchPage() {
                 <Card className="bg-muted/30">
                     <CardContent className="pt-6">
                         <div className="flex items-center gap-3">
-                            <div className={`h-3 w-3 rounded-full ${hasMasterContent ? 'bg-green-500' : 'bg-destructive'}`} />
+                            <div className={`h-3 w-3 rounded-full ${isHealthy ? 'bg-green-500' : 'bg-amber-500'}`} />
                             <div>
-                                <p className="text-sm font-medium">Master CV Status</p>
+                                <p className="text-sm font-medium">Master CV Hälsokontroll</p>
                                 <p className="text-xs text-muted-foreground">
-                                    {hasMasterContent
-                                        ? `${profile?.masterCvJson.experiences.length} erfarenheter, ${profile?.masterCvJson.skills.length} kompetenser`
-                                        : 'Inget innehåll hittades'}
+                                    {isHealthy
+                                        ? "Redo för anpassning"
+                                        : (hasMasterContent ? "Behöver mer struktur (punkter/kompetenser)" : "Inget innehåll")}
                                 </p>
                             </div>
                         </div>
@@ -155,8 +178,17 @@ export default function MatchPage() {
 
             {version && (
                 <div className="grid gap-6 md:grid-cols-2 mt-8 animate-in fade-in slide-in-from-bottom-4">
+                    {profile && (
+                        <div className="md:col-span-2">
+                            <MatchPreview master={profile.masterCvJson} tailored={version.tailoredCvJson} />
+                        </div>
+                    )}
                     <ChangeLogPanel changeLog={version.changeLogJson} />
-                    <QuestionsPanel questions={version.questions} />
+                    <QuestionsPanel
+                        questions={version.questions}
+                        onDismiss={handleDismiss}
+                        onConfirm={handleConfirm}
+                    />
                 </div>
             )}
 

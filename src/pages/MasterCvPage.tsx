@@ -8,8 +8,11 @@ export default function MasterCvPage() {
     if (loading) return <div>Laddar...</div>;
 
     const experiencesCount = profile?.masterCvJson.experiences?.length || 0;
+    const bulletsCount = profile?.masterCvJson.experiences?.reduce((acc, exp) => acc + (exp.bullets?.length || 0), 0) || 0;
     const skillsCount = profile?.masterCvJson.skills?.length || 0;
     const charCount = profile?.masterCvJson.rawCvText?.length || 0;
+
+    const isHealthy = experiencesCount >= 2 && bulletsCount >= 6 && skillsCount >= 5;
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -37,18 +40,36 @@ export default function MasterCvPage() {
                 </div>
             </div>
 
-            {skillsCount === 0 && charCount > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-2 rounded-md text-sm">
-                    Inga kompetenser hittades. Lägg till minst några för bättre matchning.
+            {!isHealthy && charCount > 50 && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-md text-sm space-y-1">
+                    <p className="font-bold">⚠️ Ditt CV behöver struktureras bättre</p>
+                    <p className="text-xs">
+                        För att matchningen ska bli riktigt bra behöver vi fler detaljer.
+                        Just nu har du: <span className="font-bold">{experiencesCount}</span> erfarenheter,
+                        <span className="font-bold">{bulletsCount}</span> punkter och
+                        <span className="font-bold">{skillsCount}</span> kompetenser.
+                    </p>
+                    <p className="text-xs italic">Tips: Dela upp din text i tydliga arbetsplatser och lägg till konkreta punkter för vad du gjort.</p>
                 </div>
             )}
 
             <div className="grid grid-cols-1 gap-6">
-                <CvImport onImport={(text) => {
-                    updateCv({ rawCvText: text }, true);
+                <CvImport onImport={(normalizedCv) => {
+                    updateCv(normalizedCv, true);
+                    setTimeout(() => {
+                        document.getElementById('editor-section')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
                 }} />
 
-                <MasterCvEditor />
+                <div id="editor-section" className="space-y-4 pt-6 mt-4 border-t-2 border-dashed">
+                    <div>
+                        <h2 className="text-2xl font-bold text-foreground">Granska och justera</h2>
+                        <p className="text-muted-foreground">
+                            Gå igenom den extraherade informationen nedan. Rätta eventuella fel och fyll i saknade detaljer för att skapa ett perfekt Master CV.
+                        </p>
+                    </div>
+                    <MasterCvEditor />
+                </div>
             </div>
         </div>
     );

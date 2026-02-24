@@ -1,29 +1,67 @@
-import type { MasterCV } from "../../../types";
+import type { MasterCV, Experience } from "../../../types";
 import type { JobParsedData, RewriteProvider, RewriteResult } from "./types";
+
+const SWEDISH_STOPWORDS = new Set([
+    "och", "att", "som", "en", "ett", "den", "de", "det", "på", "i", "med", "för", "av", "till", "men", "om", "eller", "när", "var", "vid", "från", "ska", "skall", "kan", "vi", "du", "jag", "man", "har", "är", "bli", "blir", "blev", "varit", "skulle", "ha", "kunna", "måste", "komma",
+    "heltid", "deltid", "tillsvidare", "visstid", "omfattning", "varaktighet", "anställningsform", "arbetsbeskrivning", "kommun", "stad", "ort", "lön", "ansökan", "ansök", "kontakt", "rekrytering", "personaförmedling", "bahusia", "uddevalla", "trollhättan", "vänersborg", "göteborg",
+    "lediga", "jobb", "söka", "ansöka", "senast", "referens", "intervju", "urval", "löpande", "plats", "tjänst", "id", "annons", "söker", "vi", "vårt", "vår", "våra", "din", "ditt", "dina", "er", "ert", "era", "senior", "junior", "erfaren", "du", "vill", "hos", "oss", "en", "ett", "med", "ett", "för", "samt", "också", "även", "mellan", "över", "under", "genom", "efter", "före", "mot", "utan", "vid", "från", "till", "inom", "mer", "mest", "många", "flera", "några", "någon", "något", "när", "där", "här", "hur", "varför", "vilken", "vilket", "vilka", "vad", "vem", "vems", "vart", "varifrån", "krav", "meriterande"
+]);
 
 export class RuleBasedProvider implements RewriteProvider {
     async rewrite(masterCvJson: MasterCV, jobJson: JobParsedData): Promise<RewriteResult> {
-        // 1. Extract tokens from job requirements/keywords
+        // 1. Extract tokens from job requirements/keywords and filter noise
+        const rawTokens = [
+            ...jobJson.requirements,
+            ...jobJson.keywords,
+            ...jobJson.niceToHave,
+            ...jobJson.responsibilities
+        ].flatMap(text => text.toLowerCase().split(/[^a-zåäö0-9]+/i));
+
         const jobTokens = new Set(
-            [...jobJson.requirements, ...jobJson.keywords, ...jobJson.niceToHave, ...jobJson.responsibilities]
-                .flatMap(text => text.toLowerCase().split(/[^a-zåäö0-9]+/i))
-                .filter(token => token.length > 2)
+            rawTokens
+                .map(t => t.replace(/[^a-zåäö0-9]/g, "")) // Strip punctuation from individual tokens
+                .filter(token =>
+                    token.length > 2 &&
+                    !SWEDISH_STOPWORDS.has(token) &&
+                    !/^\d+$/.test(token) // No pure numbers
+                )
         );
 
-        // 2. Score and reorder experiences
-        const scoredExperiences = masterCvJson.experiences.map(exp => {
-            const expText = `${exp.role} ${exp.company} ${exp.description} ${exp.bullets.join(" ")}`.toLowerCase();
-            const matchCount = Array.from(jobTokens).filter(token => expText.includes(token)).length;
-            return { ...exp, score: matchCount };
-        });
+        // 2. Score and reorder experiences and bullets
+        const promotedExperiences = masterCvJson.experiences.map((exp: Experience) => {
+            const expCombined = `${exp.role} ${exp.company} ${exp.description} ${exp.bullets.join(" ")}`.toLowerCase();
+            const expScore = Array.from(jobTokens).filter(token => expCombined.includes(token)).length;
 
-        const promotedExperiences = [...scoredExperiences]
-            .sort((a, b) => b.score - a.score)
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            .map(({ score, ...exp }) => exp);
+            // Score and reorder bullets within this experience
+            const scoredBullets = exp.bullets.map(bullet => {
+                const bLower = bullet.toLowerCase();
+                const bScore = Array.from(jobTokens).filter(token => bLower.includes(token)).length;
+
+                // Safe rephrasing template (Swedish)
+                let tailoredBullet = bullet;
+                if (bScore > 0) {
+                    if (bullet.toLowerCase().startsWith("stöd för") || bullet.toLowerCase().startsWith("stöttat")) {
+                        tailoredBullet = bullet.replace(/stöd för|stöttat/i, "Stöttade verksamheten med") + ", med fokus på effektivitet.";
+                    } else if (bullet.toLowerCase().startsWith("ledde") || bullet.toLowerCase().startsWith("projektledare")) {
+                        tailoredBullet = bullet.replace(/ledde|projektledare för/i, "Ledde och koordinerade projekt inom") + ", med ansvar för leverans.";
+                    }
+                }
+
+                return { original: bullet, tailored: tailoredBullet, score: bScore };
+            });
+
+            const sortedBullets = [...scoredBullets].sort((a, b) => b.score - a.score);
+
+            return {
+                ...exp,
+                bullets: sortedBullets.map(b => b.tailored),
+                score: expScore,
+                originalBullets: exp.bullets,
+                tailoredBullets: sortedBullets
+            };
+        }).sort((a, b) => b.score - a.score);
 
         // 3. Score and reorder skills
-        // Fallback: If no skills and rawCvText exists, derive some common terms that match job tokens
         let allSkills = [...masterCvJson.skills];
         if (allSkills.length === 0 && masterCvJson.rawCvText) {
             const rawLower = masterCvJson.rawCvText.toLowerCase();
@@ -33,7 +71,7 @@ export class RuleBasedProvider implements RewriteProvider {
             allSkills = [...new Set([...allSkills, ...derivedSkills])];
         }
 
-        const scoredSkills = allSkills.map(skill => {
+        const scoredSkills = allSkills.map((skill: string) => {
             const matchCount = Array.from(jobTokens).filter(token => skill.toLowerCase().includes(token)).length;
             return { skill, score: matchCount };
         });
@@ -42,16 +80,57 @@ export class RuleBasedProvider implements RewriteProvider {
             .sort((a, b) => b.score - a.score)
             .map(s => s.skill);
 
-        // 4. Questions generation (simple heuristic: look for missing keywords required by job)
-        // In a real scenario, this would check against confirmed user data.
-        const questions: string[] = [];
-        jobJson.requirements.forEach(req => {
-            const hasReq = masterCvJson.skills.some(skill => skill.toLowerCase() === req.toLowerCase()) ||
-                masterCvJson.experiences.some(exp => exp.bullets.some(b => b.toLowerCase().includes(req.toLowerCase())));
+        // 4. Questions generation (refined missing detection)
+        const categories: Record<string, string[]> = {
+            "Teknik/Verktyg": [],
+            "Certifikat": [],
+            "Körkort/Behörighet": [],
+            "Övrigt": []
+        };
+
+        const CERTS_KEYWORDS = ["certifikat", "license", "licens", "examen", "behörighet"];
+        const DRIVING_KEYWORDS = ["körkort", "truck", "kort"];
+        const TECH_KEYWORDS = ["erfarenhet", "kunskap", "van", "behärskar", "verktyg", "språk", "framework", "system"];
+
+        jobJson.requirements.forEach((req: string) => {
+            const cleanedReq = req.toLowerCase().replace(/[^a-zåäö0-9]/g, "");
+            const reqLower = req.toLowerCase();
+
+            // Filter noise from requirement lines too
+            if (SWEDISH_STOPWORDS.has(cleanedReq) || cleanedReq.length < 3) return;
+
+            const hasReq = masterCvJson.skills.some((skill: string) => skill.toLowerCase() === reqLower) ||
+                masterCvJson.experiences.some((exp: Experience) =>
+                    exp.role.toLowerCase().includes(reqLower) ||
+                    exp.bullets.some((b: string) => b.toLowerCase().includes(reqLower))
+                ) ||
+                (masterCvJson.rawCvText && masterCvJson.rawCvText.toLowerCase().includes(reqLower));
+
             if (!hasReq) {
-                questions.push(`Har du erfarenhet av: ${req}?`);
+                const question = `Har du erfarenhet av: ${req}?`;
+
+                if (DRIVING_KEYWORDS.some(kw => reqLower.includes(kw))) {
+                    categories["Körkort/Behörighet"].push(question);
+                } else if (CERTS_KEYWORDS.some(kw => reqLower.includes(kw))) {
+                    categories["Certifikat"].push(question);
+                } else if (TECH_KEYWORDS.some(kw => reqLower.includes(kw) || jobTokens.has(reqLower))) {
+                    categories["Teknik/Verktyg"].push(question);
+                } else {
+                    categories["Övrigt"].push(question);
+                }
             }
         });
+
+        // Flatten and limit to max 8
+        const questions = [
+            ...categories["Teknik/Verktyg"].map(text => ({ text, category: "Teknik/Verktyg" })),
+            ...categories["Certifikat"].map(text => ({ text, category: "Certifikat" })),
+            ...categories["Körkort/Behörighet"].map(text => ({ text, category: "Körkort/Behörighet" })),
+            ...categories["Övrigt"].map(text => ({ text, category: "Övrigt" }))
+        ].filter(q => {
+            const reqText = q.text.replace("Har du erfarenhet av: ", "").replace("?", "");
+            return !jobJson.dismissedRequirements?.includes(reqText);
+        }).slice(0, 8);
 
         const tailoredCvJson: MasterCV = {
             ...masterCvJson,
@@ -63,10 +142,13 @@ export class RuleBasedProvider implements RewriteProvider {
             tailoredCvJson,
             changeLogJson: {
                 movedSections: ["Kompetenser anpassades efter relevans"],
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                promotedExperiences: promotedExperiences.map((e) => e.role),
+                promotedExperiences: promotedExperiences.filter(e => e.score > 0).slice(0, 2).map((e) => e.role),
                 removedToOther: [],
-                rephrasedBullets: []
+                rephrasedBullets: promotedExperiences.flatMap(e =>
+                    e.tailoredBullets
+                        .filter(b => b.original !== b.tailored)
+                        .map(b => ({ before: b.original, after: b.tailored }))
+                )
             },
             questions
         };

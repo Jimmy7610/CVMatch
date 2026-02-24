@@ -8,7 +8,7 @@ export function CvPrintTemplate({ cv }: { cv: MasterCV }) {
 
             {/* HEADER */}
             <header className="mb-8 border-b-2 border-black pb-4">
-                <h1 className="text-4xl font-bold mb-2 break-words">Mitt Namn</h1> {/* Need a way to fetch name, but for MVP keep generic or assume it's in profile */}
+                <h1 className="text-4xl font-bold mb-2 break-words">CV</h1>
                 <div className="text-sm text-gray-600 flex flex-wrap gap-4">
                     {cv.links && cv.links.map((link, i) => (
                         <span key={i}>{link}</span>
