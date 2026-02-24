@@ -11,7 +11,7 @@ const SECTION_HEADERS = {
     REFERENCES: [/referenser/i]
 };
 
-const DATE_RANGE_REGEX = /(?:Jan|Feb|Mar|Apr|Maj|Jun|Jul|Aug|Sep|Okt|Nov|Dec|Januari|Februari|Mars|April|Maj|Juni|Juli|Augusti|September|Oktober|November|December|\d{4}|\d{2})\W*(?:20\d{2}|19\d{2}|[–-]|nu|pågående|present)+/i;
+const DATE_RANGE_REGEX = /(?:Jan|Feb|Mar|Apr|Maj|Jun|Jul|Aug|Sep|Okt|Nov|Dec|Januari|Februari|Mars|April|Maj|Juni|Juli|Augusti|September|Oktober|November|December|\d{4}|\d{2})\s*(?:20\d{2}|19\d{2})?\s*[–-]\s*(?:Jan|Feb|Mar|Apr|Maj|Jun|Jul|Aug|Sep|Okt|Nov|Dec|Januari|Februari|Mars|April|Maj|Juni|Juli|Augusti|September|Oktober|November|December|\d{4}|\d{2}|nu|pågående|present)\s*(?:20\d{2}|19\d{2})?/i;
 
 export interface NormalizerResult {
     normalizedCv: MasterCV;
@@ -129,15 +129,11 @@ function processBullets(exp: Experience): Experience {
 
     for (const line of lines) {
         if (line.startsWith("-") || line.startsWith("*") || line.startsWith("•")) {
-            bullets.push(line.replace(/^[-*•]\s*/, ""));
+            // Also split inline bullets since the user CV had "- ... - ..." on one line
+            const inlineBullets = line.split(/(?:^|\s)[-*•]\s+/).map(s => s.trim()).filter(Boolean);
+            bullets.push(...inlineBullets);
         } else {
-            // Detect sentences as bullets if no explicit bullets exist
-            if (line.includes(". ")) {
-                const sentences = line.split(/\. (?=[A-ZÅÄÖ])/).map(s => s.trim());
-                bullets.push(...sentences);
-            } else {
-                currentDesc += line + " ";
-            }
+            currentDesc += line + " ";
         }
     }
 

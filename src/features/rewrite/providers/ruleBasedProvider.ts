@@ -4,6 +4,7 @@ import type { JobParsedData, RewriteProvider, RewriteResult } from "./types";
 const SWEDISH_STOPWORDS = new Set([
     "och", "att", "som", "en", "ett", "den", "de", "det", "på", "i", "med", "för", "av", "till", "men", "om", "eller", "när", "var", "vid", "från", "ska", "skall", "kan", "vi", "du", "jag", "man", "har", "är", "bli", "blir", "blev", "varit", "skulle", "ha", "kunna", "måste", "komma",
     "heltid", "deltid", "tillsvidare", "visstid", "omfattning", "varaktighet", "anställningsform", "arbetsbeskrivning", "kommun", "stad", "ort", "lön", "ansökan", "ansök", "kontakt", "rekrytering", "personaförmedling", "bahusia", "uddevalla", "trollhättan", "vänersborg", "göteborg",
+    "västra", "götalands", "län", "sker", "assistent", "sommarvikarie", "sök", "din", "vår", "oss",
     "lediga", "jobb", "söka", "ansöka", "senast", "referens", "intervju", "urval", "löpande", "plats", "tjänst", "id", "annons", "söker", "vi", "vårt", "vår", "våra", "din", "ditt", "dina", "er", "ert", "era", "senior", "junior", "erfaren", "du", "vill", "hos", "oss", "en", "ett", "med", "ett", "för", "samt", "också", "även", "mellan", "över", "under", "genom", "efter", "före", "mot", "utan", "vid", "från", "till", "inom", "mer", "mest", "många", "flera", "några", "någon", "något", "när", "där", "här", "hur", "varför", "vilken", "vilket", "vilka", "vad", "vem", "vems", "vart", "varifrån", "krav", "meriterande"
 ]);
 
@@ -93,27 +94,36 @@ export class RuleBasedProvider implements RewriteProvider {
         const TECH_KEYWORDS = ["erfarenhet", "kunskap", "van", "behärskar", "verktyg", "språk", "framework", "system"];
 
         jobJson.requirements.forEach((req: string) => {
-            const cleanedReq = req.toLowerCase().replace(/[^a-zåäö0-9]/g, "");
             const reqLower = req.toLowerCase();
 
-            // Filter noise from requirement lines too
-            if (SWEDISH_STOPWORDS.has(cleanedReq) || cleanedReq.length < 3) return;
+            // When parsed Job is raw sentences, the 'req' might be a full sentence.
+            // Let's extract the actual keywords (nouns/skills) from the sentence
+            const sentenceTokens = reqLower
+                .split(/[^a-zåäö0-9]+/i)
+                .filter(t => t.length > 3 && !SWEDISH_STOPWORDS.has(t));
 
-            const hasReq = masterCvJson.skills.some((skill: string) => skill.toLowerCase() === reqLower) ||
+            if (sentenceTokens.length === 0) return;
+
+            // Simple MVP: use the first meaningful token as the core requirement
+            // A real NLP model would extract the actual skill Entity here
+            const coreReq = sentenceTokens[0];
+
+            const hasReq = masterCvJson.skills.some((skill: string) => skill.toLowerCase() === coreReq) ||
                 masterCvJson.experiences.some((exp: Experience) =>
-                    exp.role.toLowerCase().includes(reqLower) ||
-                    exp.bullets.some((b: string) => b.toLowerCase().includes(reqLower))
+                    exp.role.toLowerCase().includes(coreReq) ||
+                    exp.bullets.some((b: string) => b.toLowerCase().includes(coreReq))
                 ) ||
-                (masterCvJson.rawCvText && masterCvJson.rawCvText.toLowerCase().includes(reqLower));
+                (masterCvJson.rawCvText && masterCvJson.rawCvText.toLowerCase().includes(coreReq));
 
             if (!hasReq) {
-                const question = `Har du erfarenhet av: ${req}?`;
+                const displayReq = req.length < 30 ? req : coreReq; // Prettier questions
+                const question = `Har du erfarenhet av: ${displayReq}?`;
 
                 if (DRIVING_KEYWORDS.some(kw => reqLower.includes(kw))) {
                     categories["Körkort/Behörighet"].push(question);
                 } else if (CERTS_KEYWORDS.some(kw => reqLower.includes(kw))) {
                     categories["Certifikat"].push(question);
-                } else if (TECH_KEYWORDS.some(kw => reqLower.includes(kw) || jobTokens.has(reqLower))) {
+                } else if (TECH_KEYWORDS.some(kw => reqLower.includes(kw) || jobTokens.has(coreReq))) {
                     categories["Teknik/Verktyg"].push(question);
                 } else {
                     categories["Övrigt"].push(question);

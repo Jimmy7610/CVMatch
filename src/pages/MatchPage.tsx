@@ -50,16 +50,31 @@ export default function MatchPage() {
 
         setGenerating(true);
         try {
-            // Improved tokenization: handle Swedish characters and split more reliably
-            const jobTokens = job.extractedText
+            // Better tokenization and extraction logic
+            const text = job.extractedText || "";
+            const jobTokens = text
                 .toLowerCase()
                 .split(/[\n,.\s\-\/]/)
                 .map(s => s.trim())
                 .filter(s => s.length > 2);
 
+            // Extract real requirements (bullets or sentences with requirement words)
+            let reqs = text.split('\n')
+                .filter(line => line.trim().match(/^[-•*]\s*(.+)/))
+                .map(line => line.replace(/^[-•*]\s*/, '').trim());
+
+            if (reqs.length === 0) {
+                const sentences = text.split(/(?<=[.!?])\s+/).map(s => s.trim());
+                const reqKeywords = ['krav', 'erfarenhet', 'kunskap', 'utbildning', 'förmåga', 'meriterande', 'körkort', 'måste', 'ska ha'];
+                reqs = sentences.filter(s => reqKeywords.some(kw => s.toLowerCase().includes(kw)));
+            }
+
+            // Fallback if nothing found
+            if (reqs.length === 0) reqs = jobTokens.slice(0, 10);
+
             const parsedJobFields = {
                 title: job.title,
-                requirements: jobTokens,
+                requirements: reqs, // Use the extracted sentences
                 niceToHave: [],
                 responsibilities: [],
                 keywords: jobTokens,
