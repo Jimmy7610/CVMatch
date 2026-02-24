@@ -86,21 +86,29 @@ function parseExperiences(lines: string[]): Experience[] {
     let currentEntry: Experience | null = null;
 
     for (const line of lines) {
-        // Detect new entry by date pattern or very short bold-like line
-        const hasDate = DATE_RANGE_REGEX.test(line);
+        const match = line.match(DATE_RANGE_REGEX);
+        const hasDate = !!match;
 
-        // If it looks like a header (short, capitalized, potentially has date)
         if (hasDate || (line.length < 60 && /^[A-ZÅÄÖ]/.test(line) && !currentEntry)) {
             if (currentEntry) entries.push(processBullets(currentEntry));
 
-            // Guess parts: "Role - Company - Period"
-            const parts = line.split(/[–-]| - | – /).map(p => p.trim());
+            let headerPart = line;
+            let descriptionPart = "";
+
+            if (match && match.index !== undefined) {
+                const dateEndIndex = match.index + match[0].length;
+                headerPart = line.substring(0, dateEndIndex);
+                descriptionPart = line.substring(dateEndIndex).trim();
+                // If it starts with a hyphen/bullet, leave it, processBullets will handle it
+            }
+
+            const parts = headerPart.split(/[–-]| - | – /).map(p => p.trim());
             currentEntry = {
                 id: crypto.randomUUID(),
                 role: parts[0] || "Okänd roll",
                 company: parts[1] || "",
-                period: parts[2] || (hasDate ? line : ""),
-                description: "",
+                period: parts[2] || (hasDate ? headerPart : ""),
+                description: descriptionPart ? descriptionPart + "\n" : "",
                 bullets: []
             };
         } else if (currentEntry) {
