@@ -5,6 +5,8 @@ import { useAppSettings } from "../lib/store";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Theme } from "../types";
 
+import { DiagnosticsPanel } from "../components/dev/DiagnosticsPanel";
+
 export function AppLayout() {
     const { settings, updateSettings } = useAppSettings();
 
@@ -47,6 +49,7 @@ export function AppLayout() {
                 <Outlet />
             </main>
 
+            <DiagnosticsPanel />
             <Toaster />
         </div>
     );

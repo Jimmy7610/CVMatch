@@ -6,7 +6,7 @@ export class RuleBasedProvider implements RewriteProvider {
         // 1. Extract tokens from job requirements/keywords
         const jobTokens = new Set(
             [...jobJson.requirements, ...jobJson.keywords, ...jobJson.niceToHave, ...jobJson.responsibilities]
-                .flatMap(text => text.toLowerCase().split(/\W+/))
+                .flatMap(text => text.toLowerCase().split(/[^a-zåäö0-9]+/i))
                 .filter(token => token.length > 2)
         );
 
