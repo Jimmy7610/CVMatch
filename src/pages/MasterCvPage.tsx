@@ -1,6 +1,11 @@
+import { useState } from "react";
 import { useMasterCv } from "../hooks/useMasterCv";
 import { MasterCvEditor } from "../components/cv/MasterCvEditor";
 import { CvImport } from "../components/cv/CvImport";
+import { Button } from "@/components/ui/button";
+import { Wand2 } from "lucide-react";
+import { StructurePreviewModal } from "../components/cv/StructurePreviewModal";
+import { reconstructCv, type ReconstructResult } from "../lib/reconstructCv";
 
 export default function MasterCvPage() {
     const { profile, loading, saveStatus, updateCv } = useMasterCv();
@@ -12,7 +17,21 @@ export default function MasterCvPage() {
     const skillsCount = profile?.masterCvJson.skills?.length || 0;
     const charCount = profile?.masterCvJson.rawCvText?.length || 0;
 
+    const [strukturModalOpen, setStrukturModalOpen] = useState(false);
+    const [reconstructResult, setReconstructResult] = useState<ReconstructResult | null>(null);
+
     const isHealthy = experiencesCount >= 2 && bulletsCount >= 6 && skillsCount >= 5;
+
+    const handleOpenStruktur = () => {
+        if (!profile?.masterCvJson) return;
+        setReconstructResult(reconstructCv(profile.masterCvJson));
+        setStrukturModalOpen(true);
+    };
+
+    const handleApplyStruktur = (newCv: any, approvedSkills: string[]) => {
+        updateCv({ ...newCv, skills: [...newCv.skills, ...approvedSkills] }, true);
+        setStrukturModalOpen(false);
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -35,8 +54,18 @@ export default function MasterCvPage() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-col items-end gap-3">
                     <SaveStatusIndicator status={saveStatus} />
+                    <Button
+                        variant="secondary"
+                        size="sm"
+                        className="gap-2"
+                        disabled={charCount < 50}
+                        onClick={handleOpenStruktur}
+                    >
+                        <Wand2 className="h-4 w-4" />
+                        Strukturera om CV
+                    </Button>
                 </div>
             </div>
 
@@ -71,6 +100,16 @@ export default function MasterCvPage() {
                     <MasterCvEditor />
                 </div>
             </div>
+
+            {profile && (
+                <StructurePreviewModal
+                    open={strukturModalOpen}
+                    onOpenChange={setStrukturModalOpen}
+                    originalCv={profile.masterCvJson}
+                    result={reconstructResult}
+                    onApply={handleApplyStruktur}
+                />
+            )}
         </div>
     );
 }

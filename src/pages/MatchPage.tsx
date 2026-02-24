@@ -10,6 +10,8 @@ import { ChangeLogPanel } from "../components/match/ChangeLogPanel";
 import { QuestionsPanel } from "../components/match/QuestionsPanel";
 import { MatchPreview } from "../components/match/MatchPreview";
 import { CvCoachPanel } from "../components/match/CvCoachPanel";
+import { StructurePreviewModal } from "../components/cv/StructurePreviewModal";
+import { reconstructCv, type ReconstructResult } from "../lib/reconstructCv";
 import type { Job, Version } from "../types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -21,12 +23,15 @@ export default function MatchPage() {
     const navigate = useNavigate();
     const { toast } = useToast();
 
-    const { profile, loading: profileLoading } = useMasterCv();
+    const { profile, loading: profileLoading, updateCv } = useMasterCv();
     const { settings, loading: settingsLoading } = useAppSettings();
 
     const [job, setJob] = useState<Job | null>(null);
     const [version, setVersion] = useState<Version | null>(null);
     const [generating, setGenerating] = useState(false);
+
+    const [strukturModalOpen, setStrukturModalOpen] = useState(false);
+    const [reconstructResult, setReconstructResult] = useState<ReconstructResult | null>(null);
 
     useEffect(() => {
         if (!jobId) return;
@@ -114,6 +119,13 @@ export default function MatchPage() {
         }
     };
 
+    const handleApplyStruktur = (newCv: any, approvedSkills: string[]) => {
+        updateCv({ ...newCv, skills: [...newCv.skills, ...approvedSkills] }, true);
+        setStrukturModalOpen(false);
+        // Delay slightly so Context/DB settles before triggering generation
+        setTimeout(() => handleGenerate(), 300);
+    };
+
     const handleConfirm = async (requirement: string) => {
         // Optional: save to confirmations table
         toast({ title: "Bekräftat!", description: `Vi har noterat att du har erfarenhet av ${requirement}.` });
@@ -180,7 +192,19 @@ export default function MatchPage() {
 
             <RewriteSettingsPanel />
 
-            <div className="flex justify-center py-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 py-4">
+                <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => {
+                        if (!profile?.masterCvJson) return;
+                        setReconstructResult(reconstructCv(profile.masterCvJson));
+                        setStrukturModalOpen(true);
+                    }}
+                    disabled={generating || !hasMasterContent}
+                >
+                    Strukturera CV först
+                </Button>
                 <Button
                     size="lg"
                     onClick={handleGenerate}
@@ -213,6 +237,16 @@ export default function MatchPage() {
                 <div className="text-sm text-muted-foreground text-center border border-dashed rounded-lg p-8">
                     <p>Klicka på knappen ovan för att låta motorn analysera {job.extractedText.length} tecken från jobbannonsen.</p>
                 </div>
+            )}
+
+            {profile && (
+                <StructurePreviewModal
+                    open={strukturModalOpen}
+                    onOpenChange={setStrukturModalOpen}
+                    originalCv={profile.masterCvJson}
+                    result={reconstructResult}
+                    onApply={handleApplyStruktur}
+                />
             )}
         </div>
     );
