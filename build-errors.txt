@@ -1,0 +1,6 @@
+﻿src/components/dev/DiagnosticsPanel.tsx(22,9): error TS2591: Cannot find name 'process'. Do you need to install type definitions for node? Try `npm i --save-dev @types/node` and then add 'node' to the types field in your tsconfig.
+src/features/jobs/jobService.ts(16,27): error TS2345: Argument of type '{ id: `${string}-${string}-${string}-${string}-${string}`; title: string; company: string; extractedText: string; createdAt: string; updatedAt: string; }' is not assignable to parameter of type 'InsertType<Job, "id">'.
+  Property 'dismissedRequirements' is missing in type '{ id: `${string}-${string}-${string}-${string}-${string}`; title: string; company: string; extractedText: string; createdAt: string; updatedAt: string; }' but required in type 'Omit<Job, "id" | undefined>'.
+src/features/rewrite/providers/ollamaProvider.ts(114,13): error TS2322: Type 'string[]' is not assignable to type '{ text: string; category: string; }[]'.
+  Type 'string' is not assignable to type '{ text: string; category: string; }'.
+src/lib/cv/parseFromText.ts(11,11): error TS2741: Property 'rawCvText' is missing in type '{ profile: string; experiences: never[]; education: never[]; skills: never[]; certifications: never[]; languages: never[]; links: never[]; }' but required in type 'MasterCV'.

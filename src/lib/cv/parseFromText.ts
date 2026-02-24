@@ -9,6 +9,7 @@ export function parseCvFromText(text: string): MasterCV {
     const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
 
     const cv: MasterCV = {
+        rawCvText: text,
         profile: "",
         experiences: [],
         education: [],

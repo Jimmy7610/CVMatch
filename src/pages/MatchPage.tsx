@@ -9,6 +9,7 @@ import { RewriteSettingsPanel } from "../features/rewrite/components/RewriteSett
 import { ChangeLogPanel } from "../components/match/ChangeLogPanel";
 import { QuestionsPanel } from "../components/match/QuestionsPanel";
 import { MatchPreview } from "../components/match/MatchPreview";
+import { CvCoachPanel } from "../components/match/CvCoachPanel";
 import type { Job, Version } from "../types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -193,8 +194,9 @@ export default function MatchPage() {
 
             {version && (
                 <div className="grid gap-6 md:grid-cols-2 mt-8 animate-in fade-in slide-in-from-bottom-4">
-                    {profile && (
-                        <div className="md:col-span-2">
+                    {profile && job && (
+                        <div className="md:col-span-2 space-y-6">
+                            <CvCoachPanel masterCv={profile.masterCvJson} job={job} />
                             <MatchPreview master={profile.masterCvJson} tailored={version.tailoredCvJson} />
                         </div>
                     )}

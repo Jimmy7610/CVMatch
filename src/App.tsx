@@ -6,6 +6,7 @@ import JobsListPage from "./pages/JobsListPage";
 import JobDetailPage from "./pages/JobDetailPage";
 import MatchPage from "./pages/MatchPage";
 import ExportPdfPage from "./pages/ExportPdfPage";
+import { TestFlowPage } from "./pages/TestFlowPage";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +18,7 @@ const router = createBrowserRouter([
       { path: "jobs", element: <JobsListPage /> },
       { path: "jobs/:id", element: <JobDetailPage /> },
       { path: "match/:id", element: <MatchPage /> },
+      { path: "test-flow", element: <TestFlowPage /> },
     ]
   },
   {

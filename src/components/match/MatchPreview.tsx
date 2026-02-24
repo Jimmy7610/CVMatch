@@ -13,6 +13,11 @@ export function MatchPreview({ master, tailored }: { master: MasterCV, tailored:
             <CardContent className="grid grid-cols-2 gap-4">
                 <div className="space-y-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Original (Master)</h4>
+                    {master.profile && (
+                        <div className="text-[11px] text-muted-foreground line-clamp-3 italic mb-4">
+                            "{master.profile}"
+                        </div>
+                    )}
                     <div className="space-y-3 opacity-60">
                         {master.experiences.slice(0, 3).map((exp, i) => (
                             <div key={i} className="text-[11px] border-l-2 border-muted pl-2 py-1">
@@ -25,6 +30,11 @@ export function MatchPreview({ master, tailored }: { master: MasterCV, tailored:
 
                 <div className="space-y-4">
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-primary">Anpassat (Tailored)</h4>
+                    {tailored.profile && (
+                        <div className="text-[11px] text-primary/80 line-clamp-3 italic mb-4 bg-primary/5 p-2 rounded">
+                            "{tailored.profile}"
+                        </div>
+                    )}
                     <div className="space-y-3">
                         {tailored.experiences.slice(0, 3).map((exp, i) => (
                             <div key={i} className="text-[11px] border-l-2 border-primary pl-2 py-1 bg-primary/5">
