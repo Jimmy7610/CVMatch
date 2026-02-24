@@ -11,7 +11,7 @@ const SECTION_HEADERS = {
     REFERENCES: [/referenser/i]
 };
 
-const DATE_RANGE_REGEX = /(?:Jan|Feb|Mar|Apr|Maj|Jun|Jul|Aug|Sep|Okt|Nov|Dec|Januari|Februari|Mars|April|Maj|Juni|Juli|Augusti|September|Oktober|November|December|\d{4}|\d{2})\s*(?:20\d{2}|19\d{2})?\s*[–-]\s*(?:Jan|Feb|Mar|Apr|Maj|Jun|Jul|Aug|Sep|Okt|Nov|Dec|Januari|Februari|Mars|April|Maj|Juni|Juli|Augusti|September|Oktober|November|December|\d{4}|\d{2}|nu|pågående|present)\s*(?:20\d{2}|19\d{2})?/i;
+const DATE_RANGE_REGEX = /(?:Januari|Jan|Februari|Feb|Mars|Mar|April|Apr|Maj|Juni|Jun|Juli|Jul|Augusti|Aug|September|Sep|Oktober|Okt|November|Nov|December|Dec|\d{4}|\d{2})\s*(?:20\d{2}|19\d{2})?\s*[–-]\s*(?:Januari|Jan|Februari|Feb|Mars|Mar|April|Apr|Maj|Juni|Jun|Juli|Jul|Augusti|Aug|September|Sep|Oktober|Okt|November|Nov|December|Dec|\d{4}|\d{2}|nu|pågående|present)\s*(?:20\d{2}|19\d{2})?/i;
 
 export interface NormalizerResult {
     normalizedCv: MasterCV;

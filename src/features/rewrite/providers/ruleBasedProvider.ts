@@ -142,8 +142,22 @@ export class RuleBasedProvider implements RewriteProvider {
             return !jobJson.dismissedRequirements?.includes(reqText);
         }).slice(0, 8);
 
+        // 5. Tailor the profile text
+        let tailoredProfile = masterCvJson.profile;
+        if (jobJson.title) {
+            const topKeywords = Array.from(jobTokens).slice(0, 3).join(", ");
+            const intro = `Engagerad och driven med fokus på ${topKeywords || "kvalitet och utveckling"}. Jag ser fram emot att bidra med min kompetens i rollen som ${jobJson.title}.`;
+            if (tailoredProfile && !tailoredProfile.includes(intro)) {
+                // If the user's profile starts with "Målsättning", let's put it after that, or just safely at the top
+                tailoredProfile = `${intro}\n\n${tailoredProfile}`;
+            } else if (!tailoredProfile) {
+                tailoredProfile = intro;
+            }
+        }
+
         const tailoredCvJson: MasterCV = {
             ...masterCvJson,
+            profile: tailoredProfile,
             experiences: promotedExperiences,
             skills: sortedSkills,
         };
@@ -154,11 +168,14 @@ export class RuleBasedProvider implements RewriteProvider {
                 movedSections: ["Kompetenser anpassades efter relevans"],
                 promotedExperiences: promotedExperiences.filter(e => e.score > 0).slice(0, 2).map((e) => e.role),
                 removedToOther: [],
-                rephrasedBullets: promotedExperiences.flatMap(e =>
-                    e.tailoredBullets
-                        .filter(b => b.original !== b.tailored)
-                        .map(b => ({ before: b.original, after: b.tailored }))
-                )
+                rephrasedBullets: [
+                    { before: "Standard profil", after: "Lade till personlig inledning anpassad för jobbet." },
+                    ...promotedExperiences.flatMap(e =>
+                        e.tailoredBullets
+                            .filter(b => b.original !== b.tailored)
+                            .map(b => ({ before: b.original, after: b.tailored }))
+                    )
+                ]
             },
             questions
         };
