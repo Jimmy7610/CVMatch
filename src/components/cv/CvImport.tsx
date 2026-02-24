@@ -5,8 +5,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { FileUp, FileText, ClipboardList, Loader2, CheckCircle2 } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
-// import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import mammoth from "mammoth";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 import { normalizeCv, type NormalizerResult } from "@/lib/cvNormalizer";
 import type { MasterCV } from "@/types";
